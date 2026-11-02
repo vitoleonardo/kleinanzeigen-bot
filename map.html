@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zu verschenken</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<!-- MapLibre GL + OpenFreeMap: Open-Source-Vektorkarten, kein API-Key -->
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@5/dist/maplibre-gl.js"></script>
+<style>
+  :root { --bg: #fff; --fg: #202124; --muted: #5f6368; --line: #e8eaed; --hover: #f1f3f4;
+          --sel: #e8f0fe; --accent: #1a73e8; --list-w: 390px; }
+  body.dark { --bg: #202124; --fg: #e8eaed; --muted: #9aa0a6; --line: #3c4043; --hover: #2d2f31;
+              --sel: #1f3a5f; --accent: #8ab4f8; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; font-family: system-ui, -apple-system, sans-serif;
+               background: var(--bg); color: var(--fg); }
+  #app { display: flex; height: 100%; }
+
+  /* Liste */
+  #side { width: var(--list-w); flex: none; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line);
+          background: var(--bg); z-index: 2; }
+  header { padding: 14px 16px 10px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 18px; margin: 0 0 8px; }
+  #search { width: 100%; margin-bottom: 10px; padding: 10px 12px; font: inherit;
+            color: var(--fg); background: var(--hover); border: 1px solid var(--line); border-radius: 10px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  #notice { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  #notice:empty { display: none; }
+  #refresh { margin-top: 8px; width: 100%; padding: 8px; font: inherit; color: var(--accent);
+             background: var(--sel); border: 0; border-radius: 8px; cursor: pointer; }
+  #pager { flex: none; display: flex; align-items: center; justify-content: space-between;
+           gap: 8px; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13px; }
+  #pager button { font: inherit; background: var(--hover); color: var(--fg); border: 0;
+                  border-radius: 8px; padding: 9px 12px; cursor: pointer; }
+  #pager button:disabled { opacity: .4; cursor: default; }
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; }
+  .controls select, .controls button { font: inherit; color: var(--fg); background: var(--hover);
+          border: 0; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  .controls label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  #count { color: var(--muted); font-size: 13px; margin-left: auto; }
+  #list { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; margin: 0; padding: 0; list-style: none; }
+  #list li { display: flex; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line);
+             transition: background .1s; }
+  #list a.title { color: inherit; text-decoration: none; }
+  #list a.title:hover { text-decoration: underline; }
+  #list .photo { flex: none; width: 84px; }
+  #list .photo div.thumb { display: grid; place-items: center; font-size: 24px; }
+  #list .map-action { font: inherit; color: var(--accent); border: 0; background: none;
+                      padding: 4px 0; cursor: pointer; font-weight: 600; margin-left: 12px; }
+  #list li:hover { background: var(--hover); }
+  #list li.sel { background: var(--sel); }
+  #list .thumb { width: 84px; height: 84px; flex: none; border-radius: 10px; object-fit: cover;
+                 background: var(--hover); }
+  #list .info { min-width: 0; flex: 1; }
+  #list .top { display: flex; gap: 8px; align-items: flex-start; }
+  #list .title { font-weight: 600; font-size: 15px; line-height: 1.25; flex: 1;
+                 display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #list .meta { color: var(--muted); font-size: 12.5px; margin: 3px 0 4px; }
+  #list .reason { font-size: 13px; line-height: 1.35; color: var(--fg); opacity: .85;
+                  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #list .links { margin-top: 6px; font-size: 13px; }
+  #list .links a { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .badge { flex: none; min-width: 30px; height: 24px; border-radius: 999px; color: #fff;
+           font: 700 12.5px/24px system-ui; text-align: center; padding: 0 7px; }
+  .empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+  .feedback { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+  .feedback button { font: 13px system-ui; padding: 6px 9px; min-height: 36px; border: 1px solid var(--line);
+                     border-radius: 8px; background: var(--hover); color: var(--fg); cursor: pointer; }
+  .feedback button[aria-pressed="true"] { background: var(--sel); border-color: var(--accent); color: var(--accent); }
+  .feedback button:disabled { opacity: .55; cursor: wait; }
+  .feedback-status { flex-basis: 100%; min-height: 16px; font: 12px/16px system-ui; color: var(--muted); }
+  .feedback-status.error { color: #c62828; }
+  body.dark .feedback-status.error { color: #ff8a80; }
+
+  /* Karte */
+  #mapwrap { flex: 1; position: relative; }
+  #map { position: absolute; inset: 0; }
+  .pin { width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid #fff; color: #fff;
+         padding: 0; font: 700 13px/25px system-ui; text-align: center; cursor: pointer;
+         box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .15s; }
+  .pin:hover { transform: scale(1.15); }
+  .pin.sel { transform: scale(1.35); box-shadow: 0 0 0 4px rgba(26,115,232,.45), 0 2px 6px rgba(0,0,0,.35); }
+  .home { width: 16px; height: 16px; border-radius: 50%; background: #1a73e8; border: 3px solid #fff;
+          box-shadow: 0 0 0 6px rgba(26,115,232,.25); }
+  .maplibregl-popup-content { padding: 0; border-radius: 12px; overflow: hidden; width: 240px;
+                              color: #202124; }
+  .popup img { width: 100%; height: 160px; object-fit: cover; display: block; }
+  .popup .body { padding: 10px 12px 12px; }
+  .popup b { display: block; font-size: 15px; margin-bottom: 2px; }
+  .popup small { color: #666; }
+  .popup p { margin: 6px 0 8px; font-size: 13px; }
+  .popup a { color: #1a73e8; text-decoration: none; font-weight: 600; }
+  .popup .feedback { --fg: #202124; --muted: #5f6368; --line: #dadce0; --hover: #f1f3f4;
+                     --sel: #e8f0fe; --accent: #1a73e8; }
+
+  /* Umschalter nur mobil */
+  #switch { display: none; }
+  @media (max-width: 760px) {
+    #app { display: block; }
+    #side { width: 100%; height: 100%; border: 0; position: relative; z-index: 5; }
+    #mapwrap { position: absolute; inset: 0; }
+    body.view-map #side { display: none; }
+    body.view-list #mapwrap { visibility: hidden; }
+    #switch { display: flex; position: fixed; z-index: 20; left: 50%; transform: translateX(-50%);
+              bottom: calc(18px + env(safe-area-inset-bottom)); background: #202124; border-radius: 999px;
+              padding: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.35); }
+    #switch button { font: 600 14px system-ui; border: 0; background: transparent; color: #e8eaed;
+                     padding: 9px 18px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+    #switch button.on { background: #fff; color: #202124; }
+    #pager { padding-bottom: calc(85px + env(safe-area-inset-bottom)); }
+  }
+</style>
+</head>
+<body class="view-list">
+<div id="app">
+  <aside id="side">
+    <header>
+      <h1 id="heading">🎁 Zu verschenken</h1>
+      <input id="search" type="search" placeholder="Titel, Beschreibung oder Ort suchen" aria-label="Anzeigen durchsuchen" autocomplete="off">
+      <div class="controls">
+        <label><input type="checkbox" id="good" checked> Score ≥ 7</label>
+        <select id="sort" aria-label="Sortierung">
+          <option value="new">Neueste</option>
+          <option value="score">Bester Score</option>
+          <option value="dist">Nächste</option>
+        </select>
+        <button id="theme" title="Hell/Dunkel">🌙</button>
+        <span id="count" role="status"></span>
+      </div>
+      <button id="refresh" hidden>Neue Ergebnisse anzeigen</button>
+      <p id="notice" role="status"></p>
+    </header>
+    <ul id="list" aria-label="Anzeigen"></ul>
+    <nav id="pager" aria-label="Ergebnisseiten">
+      <button id="prev" disabled>← Zurück</button>
+      <span id="page-label" role="status">Seite 1 / 1</span>
+      <button id="next" disabled>Weiter →</button>
+    </nav>
+  </aside>
+  <div id="mapwrap"><div id="map"></div></div>
+</div>
+<div id="switch">
+  <button data-view="list" class="on">☰ Liste</button>
+  <button data-view="map">🗺️ Karte</button>
+</div>
+<script src="/config.js"></script>
+<script src="/map.js"></script>
+</body>
+</html>

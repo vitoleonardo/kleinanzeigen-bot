@@ -1,0 +1,17 @@
+# Annahme: Repository liegt in ~/kleinanzeigen-bot, venv in .venv. Sonst Pfade anpassen.
+[Unit]
+Description=Kleinanzeigen Zu-verschenken-Bot -> Telegram
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/kleinanzeigen-bot
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=%h/.npm-global/bin:%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/kleinanzeigen-bot/.venv/bin/python ka_bot.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,8 @@
+.env
+ka.db
+ka.db-*
+.venv/
+__pycache__/
+.pytest_cache/
+*.log
+interests.md

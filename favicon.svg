@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Zu verschenken</title>
+  <rect width="64" height="64" rx="16" fill="#166534"/>
+  <g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round">
+    <path d="M32 25c-16 0-17-15-8-13 6 1 8 13 8 13Zm0 0c16 0 17-15 8-13-6 1-8 13-8 13Z"/>
+    <path d="M16 34v17h32V34"/>
+    <rect x="12" y="25" width="40" height="10" rx="2"/>
+    <path d="M32 25v26"/>
+  </g>
+</svg>
